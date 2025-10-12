@@ -30,8 +30,9 @@ import dayjs, { Dayjs } from "dayjs";
 import filterLastWeekAssigned from "@/util/filterLastWeekAssigned";
 
 type Props = {
+  referralsUnassigned: Referral[];
+  referralsUncontacted: Referral[];
   refreshToken: string;
-  referrals: Referral[];
   users: User[];
   areas: Area[];
   uba: UbaArea[];
@@ -39,11 +40,12 @@ type Props = {
   stopTeachingReasons: StopTeachingReason[];
 };
 
-export default function PageClient({ refreshToken, areas, offers, referrals, stopTeachingReasons, uba, users }: Props) {
+export default function PageClient({ refreshToken, areas, offers, referralsUnassigned, referralsUncontacted, stopTeachingReasons, uba, users }: Props) {
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [referralsState, setReferralsState] = useState(referrals);
+  const [referralsState, setReferralsState] = useState([...referralsUnassigned, ...referralsUncontacted]);
   const [activeFilter, setActiveFilter] = useState(0);
   const [isDescendingDateOrder, setIsDescendingDateOrder] = useState(true);
+  const [hideAssigned, setHideAssigned] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentReferral, setCurrentReferral] = useState<Referral | null>(null);
@@ -88,7 +90,7 @@ export default function PageClient({ refreshToken, areas, offers, referrals, sto
     setDate(null);
   };
 
-  const filtered = useMemo(() => {
+  const raw = useMemo(() => {
     if (!referralsState) return [];
 
     if (activeFilter === FILTERS.TWO_PLUS) {
@@ -109,13 +111,21 @@ export default function PageClient({ refreshToken, areas, offers, referrals, sto
     return [...referralsState].sort((a, b) => (isDescendingDateOrder ? b.createDate - a.createDate : a.createDate - b.createDate));
   }, [activeFilter, date, isDescendingDateOrder, referralsState]);
 
+  const filtered = raw.filter((ref) => {
+    if (hideAssigned) {
+      return !ref.areaId;
+    } else {
+      return ref.areaId;
+    }
+  });
+
   const title = useMemo(() => {
-    return `${Object.values(TitleOption)[activeFilter]} (${filtered.length})`;
-  }, [activeFilter, filtered]);
+    return `${hideAssigned ? "People Not Assigned" : "People Assigned"} (${filtered.length})`;
+  }, [hideAssigned, filtered]);
 
   const lastWeekAssignedLength = useMemo(() => {
-    return referralsState.filter((item) => filterLastWeekAssigned(item.createDate)).length;
-  }, [referralsState]);
+    return filtered.filter((item) => filterLastWeekAssigned(item.createDate)).length;
+  }, [filtered]);
 
   return (
     <>
@@ -138,10 +148,12 @@ export default function PageClient({ refreshToken, areas, offers, referrals, sto
         <div className={styles.headerContainer}>
           <div className={styles.titleContainer}>
             <Title title={title} />
-            <h3 className="text-white">In the Last Week Assigned to Mission ({lastWeekAssignedLength})</h3>
+            <h3 className="text-white">In the Last Week ({lastWeekAssignedLength})</h3>
           </div>
           <div className={styles.headerFilterContainer}>
             <HeaderButtonGroup
+              hideAssigned={hideAssigned}
+              setHideAssigned={setHideAssigned}
               dataLoaded={dataLoaded}
               setDataLoaded={setDataLoaded}
               referralsState={referralsState}

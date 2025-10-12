@@ -1,34 +1,43 @@
 import { AreaInfo, ContactAttempt, Referral } from "@/interfaces";
-import fetchData from "@/util/api/fetchData";
+import { fetchChurchServer } from "@/util/api/fetchChurchServer";
 import filterUniqueEvent from "@/util/filterUniqueEvent";
 import pLimit from "p-limit";
+import { filterUncontactedReferrals } from "../lib/filterUncontactedReferrals";
 
-const limit = pLimit(3);
+const limit = pLimit(10);
 
 async function fetchAreaInfo(referrals: Referral[], refreshToken: string) {
-  return Promise.all(
-    referrals.map(async (ref) => {
+  const tasks = referrals.map((ref) =>
+    limit(async () => {
       const url = `https://referralmanager.churchofjesuschrist.org/services/mission/assignment?address=${ref.address}`;
-      const areaInfo: AreaInfo = await fetchData(url, refreshToken);
+      if (ref.areaId) {
+        return { ...ref };
+      }
+      const areaInfo = await fetchChurchServer<AreaInfo>(url, refreshToken);
       return { ...ref, areaInfo };
     })
   );
+
+  const results = await Promise.all(tasks);
+  return results;
 }
 
 async function fetchEvents(referrals: Referral[], refreshToken: string) {
-  return Promise.all(
-    referrals.map(async (ref) => {
-      const contactAttempts: ContactAttempt[] = await fetchData(
-        `https://referralmanager.churchofjesuschrist.org/services/progress/timeline/${ref.personGuid}`,
-        refreshToken
-      );
+  const tasks = referrals.map((ref) =>
+    limit(async () => {
+      const url = `https://referralmanager.churchofjesuschrist.org/services/progress/timeline/${ref.personGuid}`;
+      const contactAttempts = await fetchChurchServer<ContactAttempt[]>(url, refreshToken);
       if (contactAttempts) {
         const filteredAttempts = filterUniqueEvent(contactAttempts.filter(({ timelineItemType }) => ["CONTACT", "TEACHING"].includes(timelineItemType)));
         return { ...ref, contactAttempts: filteredAttempts };
+      } else {
+        return { ...ref, contactAttempts: [] };
       }
-      return { ...ref, contactAttempts: [] };
     })
   );
+
+  const results = await Promise.all(tasks);
+  return results;
 }
 
 export async function loadReferralDetails(referrals: Referral[], refreshToken: string) {
@@ -38,13 +47,32 @@ export async function loadReferralDetails(referrals: Referral[], refreshToken: s
 }
 
 export async function getReferrals(refreshToken: string) {
-  const missionId = process.env.NEXT_PUBLIC_MISSION_ID;
-  const url = `https://referralmanager.churchofjesuschrist.org/services/people/mission/${missionId}`;
-  const data = await fetchData(url, refreshToken);
-  if (!data) return [];
-  const persons: Referral[] = data.persons;
-  const filtered = persons.filter((ref) => !ref.areaId && ref.personStatusId === 1);
-  filtered.sort((a, b) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime());
+  try {
+    const missionId = process.env.NEXT_PUBLIC_MISSION_ID;
+    const url = `https://fastify-referral-api.vercel.app/api/referrals/unfiltered/all?refreshToken=${refreshToken}&missionId=${missionId}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error("An unexpected error occurred.");
+    const { referrals, length } = data as {
+      referrals: Referral[];
+      length: number;
+    };
+    const unassigned = referrals.filter((ref) => !ref.areaId && ref.personStatusId === 1);
+    const uncontacted = filterUncontactedReferrals(referrals, []);
 
-  return filtered;
+    return { unassigned, uncontacted };
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    return {
+      unassigned: [],
+      uncontacted: [],
+    };
+  }
 }

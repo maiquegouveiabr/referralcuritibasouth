@@ -28,6 +28,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
   ]);
 
   return (
-    <PageClient areas={areas} offers={offers} referrals={referrals} stopTeachingReasons={stopReasons} uba={uba} users={users} refreshToken={refreshToken} />
+    <PageClient
+      areas={areas}
+      offers={offers}
+      referralsUnassigned={referrals.unassigned}
+      referralsUncontacted={referrals.uncontacted}
+      stopTeachingReasons={stopReasons}
+      uba={uba}
+      users={users}
+      refreshToken={refreshToken}
+    />
   );
 }

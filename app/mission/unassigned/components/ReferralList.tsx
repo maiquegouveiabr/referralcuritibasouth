@@ -8,6 +8,7 @@ import OfferButton from "./OfferButton";
 import CopyButton from "./CopyButton";
 import DeleteButton from "./DeleteButton";
 import SendButton from "./SendButton";
+import checkIfReferenceWasCreatedByMissionary from "@/util/checkIfReferenceWasCreatedByMissionary";
 
 type Props = {
   dataLoaded: boolean;
@@ -20,19 +21,24 @@ type Props = {
 
 function ReferralList({ dataLoaded, refreshToken, stateReferrals, setReferralsState, setCurrentReferral, setDialogOpen }: Props) {
   const referralItems = useMemo(() => {
-    return stateReferrals.map((ref) => (
-      <ReferralItem key={ref.personGuid} ref={ref}>
-        <div className="flex flex-row gap-1">
-          <DeleteButton referral={ref} setReferralsState={setReferralsState} />
-          {ref.contactInfo && <CopyButton referral={ref} />}
-          {dataLoaded && !ref.contactInfo && <PhoneButton refreshToken={refreshToken} referral={ref} setReferralsState={setReferralsState} />}
-          {dataLoaded && !ref.offerItem && !ref.personOffer && <OfferButton referral={ref} refreshToken={refreshToken} setReferralsState={setReferralsState} />}
-          {ref.contactInfo && !ref.sentStatus && (
-            <SendButton referral={ref} setReferralsState={setReferralsState} setCurrentReferral={setCurrentReferral} setDialogOpen={setDialogOpen} />
-          )}
-        </div>
-      </ReferralItem>
-    ));
+    return stateReferrals.map((ref) => {
+      const byMissionary = checkIfReferenceWasCreatedByMissionary(ref.personGuid);
+      return (
+        <ReferralItem key={ref.personGuid} ref={ref}>
+          <div className="flex flex-row gap-1">
+            <DeleteButton referral={ref} setReferralsState={setReferralsState} />
+            {ref.contactInfo && <CopyButton referral={ref} />}
+            {dataLoaded && !ref.contactInfo && <PhoneButton refreshToken={refreshToken} referral={ref} setReferralsState={setReferralsState} />}
+            {dataLoaded && !ref.offerItem && !ref.personOffer && !byMissionary && (
+              <OfferButton referral={ref} refreshToken={refreshToken} setReferralsState={setReferralsState} />
+            )}
+            {ref.contactInfo && !ref.sentStatus && (
+              <SendButton referral={ref} setReferralsState={setReferralsState} setCurrentReferral={setCurrentReferral} setDialogOpen={setDialogOpen} />
+            )}
+          </div>
+        </ReferralItem>
+      );
+    });
   }, [dataLoaded, refreshToken, setCurrentReferral, setDialogOpen, setReferralsState, stateReferrals]);
 
   return (

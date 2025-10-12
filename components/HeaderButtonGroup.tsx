@@ -2,8 +2,13 @@ import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { Referral, TitleOption } from "@/interfaces";
 import { Button } from "./ui/button";
 import { useState } from "react";
+import { Badge } from "./ui/badge";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 interface HeaderButtonGroupProps {
+  hideAssigned: boolean;
+  setHideAssigned: React.Dispatch<React.SetStateAction<boolean>>;
   dataLoaded: boolean;
   setDataLoaded: (value: boolean) => void;
   referralsState: Referral[];
@@ -15,6 +20,8 @@ interface HeaderButtonGroupProps {
 }
 
 function HeaderButtonGroup({
+  hideAssigned,
+  setHideAssigned,
   dataLoaded,
   setDataLoaded,
   onSetDateOrder,
@@ -28,11 +35,17 @@ function HeaderButtonGroup({
 
   const handleLoadData = async () => {
     try {
+      let filtered;
+      if (hideAssigned) {
+        filtered = referralsState.filter((ref) => !ref.areaId);
+      } else {
+        filtered = referralsState.filter((ref) => ref.areaId);
+      }
       setIsLoading(true);
       const url = `/api/referrals/complete?refreshToken=${refreshToken}`;
       const response = await fetch(url, {
         method: "POST",
-        body: JSON.stringify(referralsState),
+        body: JSON.stringify(filtered),
       });
       if (!response.ok) throw new Error(response.statusText);
       const updated = await response.json();
@@ -49,9 +62,15 @@ function HeaderButtonGroup({
   return (
     <div className="w-fit flex flex-col gap-1 items-end">
       {!dataLoaded && (
-        <Button disabled={isLoading} className="cursor-pointer text-white" onClick={handleLoadData} variant="link">
-          Load Data
-        </Button>
+        <>
+          <Button disabled={isLoading} className="cursor-pointer text-white" onClick={handleLoadData} variant="link">
+            Load Data
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Switch id="airplane-mode" checked={hideAssigned} onClick={() => setHideAssigned((prev) => !prev)} />
+            <Label className="text-white">{hideAssigned ? "Only Unassigned" : "Only Assigned"}</Label>
+          </div>
+        </>
       )}
       {dataLoaded && (
         <>

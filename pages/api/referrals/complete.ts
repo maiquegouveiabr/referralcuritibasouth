@@ -3,6 +3,14 @@ import { loadReferralDetails } from "@/app/mission/unassigned/api/getReferrals";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Referral } from "@/interfaces";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "5mb",
+    },
+  },
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" }); // Only POST is supported

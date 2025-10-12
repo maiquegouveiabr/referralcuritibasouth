@@ -80,6 +80,7 @@ export interface Zone {
 }
 
 export interface Referral {
+  offersTopic: TopicData | null;
   personOffer: PersonOffer | null;
   offerItem: OfferItem | null;
   contactInfo: ContactInfo | null;
@@ -393,6 +394,15 @@ export interface PersonOffer {
   submittingURL: string;
   pageTitle: string;
   findTypeId: null;
+}
+
+export interface TopicData {
+  id: string;
+  topic: string;
+  isDefault: boolean;
+  attributes: {
+    thingsToConsider: string[];
+  };
 }
 
 export interface Area {

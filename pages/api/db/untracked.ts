@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/util/db";
-import fetchData from "@/util/api/fetchData";
+import { fetchChurchServer } from "@/util/api/fetchChurchServer";
 import { Referral } from "@/interfaces";
 
 const SERVICO = 500622165;
@@ -33,50 +33,64 @@ function isTimestampAfterReference(reference: string, timestamp: number | string
 }
 
 export default async function (req: NextApiRequest, res: NextApiResponse) {
-  const MISSION_ID = Number(process.env.NEXT_PUBLIC_MISSION_ID);
-  const UBA_AREA_ID = Number(process.env.NEXT_PUBLIC_UBA_AREA_ID);
-  const url = `https://referralmanager.churchofjesuschrist.org/services/people/mission/${MISSION_ID}?includeDroppedPersons=true`;
-  const { refreshToken, date, save } = req.query;
+  try {
+    const MISSION_ID = Number(process.env.NEXT_PUBLIC_MISSION_ID);
+    const UBA_AREA_ID = Number(process.env.NEXT_PUBLIC_UBA_AREA_ID);
+    const url = `https://referralmanager.churchofjesuschrist.org/services/people/mission/${MISSION_ID}?includeDroppedPersons=true`;
+    const { refreshToken, date, save } = req.query as {
+      refreshToken: string;
+      date: string;
+      save: string;
+    };
 
-  const data = await fetchData(url, String(refreshToken));
-  const rawReferrals: Referral[] = data.persons;
-
-  if (!refreshToken) {
-    res.status(400).send("provide a refreshToken");
-  }
-
-  if (!date) {
-    res.status(400).send("provide a date");
-  }
-
-  const referrals = await prisma.reference.findMany();
-
-  const filtered = rawReferrals.filter(
-    (raw) =>
-      !referrals.some((ref) => ref.id === raw.personGuid) &&
-      checkValidZone(raw.zoneId) &&
-      isTimestampAfterReference(String(date), raw.createDate) &&
-      !raw.personGuid.includes("-")
-  );
-
-  if (save === "true" && filtered.length > 0) {
-    const data = filtered.map((ref) => {
-      return {
-        id: ref.personGuid,
-        name: ref.lastName ? `${ref.firstName} ${ref.lastName}` : `${ref.firstName}`,
-        area_id: checkValidZone(ref.zoneId) ? (ref.areaId === UBA_AREA_ID ? 0 : ref.areaId) : 1,
-        who_sent: "Python",
-      };
-    });
-    try {
-      await prisma.reference.createMany({
-        data,
-      });
-      res.status(201).send("Multiple values created!");
-    } catch (error) {
-      res.status(500).send("INTERNAL_SERVER_ERROR");
+    const data = (await fetchChurchServer(url, refreshToken)) as {
+      persons: Referral[];
+    };
+    if (!data) {
+      throw new Error("An unexpected error occurred.");
     }
-  }
+    const rawReferrals = data.persons;
 
-  res.status(200).send(filtered);
+    if (!refreshToken) {
+      res.status(400).send("provide a refreshToken");
+    }
+
+    if (!date) {
+      res.status(400).send("provide a date");
+    }
+
+    const referrals = await prisma.reference.findMany();
+
+    const filtered = rawReferrals.filter(
+      (raw) =>
+        !referrals.some((ref) => ref.id === raw.personGuid) &&
+        checkValidZone(raw.zoneId) &&
+        isTimestampAfterReference(String(date), raw.createDate) &&
+        !raw.personGuid.includes("-")
+    );
+
+    if (save === "true" && filtered.length > 0) {
+      const data = filtered.map((ref) => {
+        return {
+          id: ref.personGuid,
+          name: ref.lastName ? `${ref.firstName} ${ref.lastName}` : `${ref.firstName}`,
+          area_id: checkValidZone(ref.zoneId) ? (ref.areaId === UBA_AREA_ID ? 0 : ref.areaId) : 1,
+          who_sent: "Python",
+        };
+      });
+      try {
+        await prisma.reference.createMany({
+          data,
+        });
+        res.status(201).send("Multiple values created!");
+      } catch (error) {
+        res.status(500).send("INTERNAL_SERVER_ERROR");
+      }
+    }
+
+    res.status(200).send(filtered);
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Error) res.status(500).send(error.message);
+  }
 }
