@@ -1,6 +1,6 @@
-import { ContactAttempt } from "@/interfaces";
+import { Event } from "@/interfaces";
 
-const filterUniqueEvent = (events: ContactAttempt[]) => {
+const filterUniqueEvent = (events: Event[]) => {
   const eventDays = new Set();
   return {
     uniqueSet: eventDays,
@@ -14,7 +14,7 @@ const filterUniqueEvent = (events: ContactAttempt[]) => {
   };
 };
 
-export default (events: ContactAttempt[]) => {
+export default (events: Event[]) => {
   const { uniqueSet: uniqueInPersonSet, uniqueEvents: uniqueInPersonEvents } = filterUniqueEvent(
     events.filter(({ contactTypeCode }) => contactTypeCode === "PERSON")
   );

@@ -1,6 +1,6 @@
-import { ContactAttempt } from "@/interfaces";
+import { Event } from "@/interfaces";
 
-export default (events: ContactAttempt[]) => {
+export default (events: Event[]) => {
   const eventDays = new Set();
   return events.filter(({ itemDate }) => {
     const date = new Date(itemDate - 3 * 60 * 60 * 1000);

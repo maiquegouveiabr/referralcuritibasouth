@@ -1,4 +1,4 @@
-import { AreaInfo, ContactAttempt, Referral } from "@/interfaces";
+import { AreaInfo, Event, Referral } from "@/interfaces";
 import { fetchChurchServer } from "@/util/api/fetchChurchServer";
 import filterUniqueEvent from "@/util/filterUniqueEvent";
 import pLimit from "p-limit";
@@ -26,7 +26,7 @@ async function fetchEvents(referrals: Referral[], refreshToken: string) {
   const tasks = referrals.map((ref) =>
     limit(async () => {
       const url = `https://referralmanager.churchofjesuschrist.org/services/progress/timeline/${ref.personGuid}`;
-      const contactAttempts = await fetchChurchServer<ContactAttempt[]>(url, refreshToken);
+      const contactAttempts = await fetchChurchServer<Event[]>(url, refreshToken);
       if (contactAttempts) {
         const filteredAttempts = filterUniqueEvent(contactAttempts.filter(({ timelineItemType }) => ["CONTACT", "TEACHING"].includes(timelineItemType)));
         return { ...ref, contactAttempts: filteredAttempts };
