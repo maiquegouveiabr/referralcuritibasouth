@@ -1,25 +1,4 @@
-export interface ProsArea {
-  id: number;
-  name: string;
-  children: Child[] | null;
-  email: string;
-  type: string; // e.g., "PROS_AREA"
-  missionaries: Missionary[];
-  areaNumbers: string[];
-  isActive: boolean;
-  doesReceiveReferrals: boolean;
-  afabEnabled: boolean;
-  assignmentOrgs: number[];
-  address: string;
-  city: string;
-  stateProvince: string;
-  postalCode: string;
-  locId: number;
-  referralTextEnabled: boolean;
-  hasKiAccess: boolean;
-}
-
-export interface ContactAttempt {
+export interface Event {
   timelineItemType: string; // Possible enumeration value
   contactTypeCode: string | null; // Nullable string
   eventStatus: boolean | null; // Nullable string
@@ -35,57 +14,13 @@ export interface ContactAttempt {
   emailCampaignId: number; // Numeric value for email campaign ID
 }
 
-export interface Child {
-  id: number;
-  name: string;
-  children: null; // Assuming children are always `null` in this case
-  type: string; // e.g., "ORGANIZATION"
-  subType: string; // e.g., "Ward"
-  mapLayerUnitType: string | null;
-  unitNumber: number | null;
-  wmlFullName: string | null;
-  wmlHomePhone: string | null;
-  wmlEmailAddress: string | null;
-  orgProperties: string | null;
-  meetingHouseAddress: string | null;
-  areaIds: number[];
-}
-
-export interface Missionary {
-  id: number;
-  cmisId: number;
-  legacyId: number;
-  clientGuid: string;
-  prosAreaId: number;
-  firstName: string;
-  middleName: string | null;
-  lastName: string;
-  emailAddress: string;
-  genderCode: string; // e.g., "F"
-  langId: number;
-  nativeLangId: number;
-  roleId: number;
-  currentPosition: string | null;
-  missionaryType: string; // e.g., "SISTER"
-}
-
-export interface District {
-  children: ProsArea[]; // Replace `any[]` with a more specific type based on actual structure
-}
-
-export interface Zone {
-  id: number;
-  name: string;
-  children: District[]; // Zone contains an array of District objects
-}
-
 export interface Referral {
   offersTopic: TopicData | null;
   personOffer: PersonOffer | null;
   offerItem: OfferItem | null;
   contactInfo: ContactInfo | null;
   areaInfo: AreaInfo | null;
-  contactAttempts: ContactAttempt[] | [];
+  contactAttempts: Event[] | [];
   personGuid: string;
   householdGuid: string;
   firstName: string;
@@ -149,7 +84,7 @@ export interface Referral {
   phoneHomeTextable: boolean;
   sentStatus: boolean;
   offerText?: string;
-  phoneMatches: { id: string; phone: string; name: string }[] | null;
+  phoneMatches: { id: string; phone: string; name: string; area_name: string; other: string }[] | null;
 }
 
 export interface ContactInfo {
@@ -166,23 +101,8 @@ export interface ContactInfo {
   socialMediaAccounts: string[] | null;
 }
 
-export interface HouseholdInfo {
-  orgId: number;
-  orgNum: number;
-  stewardCmisId: string | null;
-  address: string;
-  locId: number;
-}
-
-export interface DataPrivacyData {
-  privacyNoticeStatusId: number;
-  privacyNoticeMethodId: number;
-  privacyNoticeDueDate: string | null;
-  affirmedInterestDate: number;
-}
-
 export interface ReferralComplete {
-  contactAttempts: ContactAttempt[];
+  contactAttempts: Event[];
   areaInfo: AreaInfo;
   person: {
     id: string;
@@ -213,14 +133,14 @@ export interface ReferralComplete {
     membershipCreationDate: string | null;
     lastStewardChangeDate: string | null;
     deleted: boolean;
-    householdInfo: HouseholdInfo;
+
     convert: boolean;
     member: boolean;
     dataPrivacyConsent: boolean;
     pendingAnonymizationDate: number;
     followerCmisIds: string[] | null;
     tags: string[] | null;
-    dataPrivacyData: DataPrivacyData;
+
     scheduledBaptism: string | null;
     confirmationDate: string | null;
     baptismDate: string | null;
@@ -234,77 +154,108 @@ export interface ReferralComplete {
   };
 }
 
-export interface Mission {
-  id: number;
-  name: string;
-  children: unknown | null;
-  leadership: Leadership[];
-  cdolId: number;
-  orgId: number;
-  langId: number;
-  msnTypeId: number;
-  msnStatusId: number;
-  missionPresident: MissionPresident;
-  type: string;
-  emailAddress: string;
-  mailingAddress: string;
-  streetAddress: string;
-  timeZone: string;
-  phoneNumbers: string[];
-  eccAreaName: string;
-  parentId: number;
-}
-
-export interface MissionPresident {
-  phoneNumber: string;
-  presidentName: string;
-  presidentEmail: string;
-}
-
-export interface Leadership {
-  id: number;
-  roleName: string;
-  missionary: Missionary;
-  prosArea: ProsArea | null;
-}
-
-export interface Organization {
-  id: number;
-  name: string;
-  children: unknown | null;
-  type: string;
-  subType: string;
-  mapLayerUnitType: string;
-  unitNumber: number;
-  wmlFullName: string | null;
-  wmlHomePhone: string | null;
-  wmlEmailAddress: string | null;
-  orgProperties: {
-    LanguageCode: string;
-    WorshipService: string | null;
-    Contact: string | null;
-    Language: string;
-    TimeZone: string;
-  };
-  meetingHouseAddress: {
-    street: string;
-    street2: string;
-    city: string;
-    county: string | null;
-    state: string;
-    postalCode: string;
-    country: string;
-    countryCode: string;
-    countryId: number;
-    formattedAddress: string;
-  };
-  areaIds: number[];
-}
-
 export interface AreaInfo {
-  missions: Mission[] | null;
-  proselytingAreas: ProsArea[] | null;
-  organizations: Organization[] | null;
+  missions:
+    | {
+        id: number;
+        name: string;
+        children: unknown | null;
+        leadership: {
+          id: number;
+          roleName: string;
+        }[];
+        cdolId: number;
+        orgId: number;
+        langId: number;
+        msnTypeId: number;
+        msnStatusId: number;
+        missionPresident: {
+          phoneNumber: string;
+          presidentName: string;
+          presidentEmail: string;
+        };
+        type: string;
+        emailAddress: string;
+        mailingAddress: string;
+        streetAddress: string;
+        timeZone: string;
+        phoneNumbers: string[];
+        eccAreaName: string;
+        parentId: number;
+      }[]
+    | null;
+  proselytingAreas:
+    | {
+        id: number;
+        name: string;
+        children:
+          | {
+              id: number;
+              name: string;
+              children: null; // Assuming children are always `null` in this case
+              type: string; // e.g., "ORGANIZATION"
+              subType: string; // e.g., "Ward"
+              mapLayerUnitType: string | null;
+              unitNumber: number | null;
+              wmlFullName: string | null;
+              wmlHomePhone: string | null;
+              wmlEmailAddress: string | null;
+              orgProperties: string | null;
+              meetingHouseAddress: string | null;
+              areaIds: number[];
+            }[]
+          | null;
+        email: string;
+        type: string; // e.g., "PROS_AREA"
+
+        areaNumbers: string[];
+        isActive: boolean;
+        doesReceiveReferrals: boolean;
+        afabEnabled: boolean;
+        assignmentOrgs: number[];
+        address: string;
+        city: string;
+        stateProvince: string;
+        postalCode: string;
+        locId: number;
+        referralTextEnabled: boolean;
+        hasKiAccess: boolean;
+      }[]
+    | null;
+  organizations:
+    | {
+        id: number;
+        name: string;
+        children: unknown | null;
+        type: string;
+        subType: string;
+        mapLayerUnitType: string;
+        unitNumber: number;
+        wmlFullName: string | null;
+        wmlHomePhone: string | null;
+        wmlEmailAddress: string | null;
+        orgProperties: {
+          LanguageCode: string;
+          WorshipService: string | null;
+          Contact: string | null;
+          Language: string;
+          TimeZone: string;
+        };
+        meetingHouseAddress: {
+          street: string;
+          street2: string;
+          city: string;
+          county: string | null;
+          state: string;
+          postalCode: string;
+          country: string;
+          countryCode: string;
+          countryId: number;
+          formattedAddress: string;
+        };
+        areaIds: number[];
+      }[]
+    | null;
   bestOrgId: number | null;
   bestProsAreaId: number | null;
   missionRatio: number;
@@ -324,41 +275,46 @@ export interface AreaInfo {
   actualMatchSource: string | null;
   extentCoordinates: [number, number, number, number] | null;
   countryExtentThresholdMeters: number;
-  prosAreasWithinExtent: ProsArea | null;
+
   formattedAddress: string | null;
   areaIdRejectionReasons: unknown | null;
   isBestWardLanguageMatch: boolean;
 }
 
 export interface OfferItem {
-  adConcept: string;
-  adGroup: string;
-  adPlacement: string;
-  adText: string;
-  adTopic: string;
-  adType: string;
-  adVendor: string;
-  boncomCampaign: string;
-  campaignName: string;
-  cid: string;
-  destinationURL: string;
-  displayUrl: string;
-  dynamicDescriptions: string[];
-  headline: string;
-  landingPage: string;
-  landingSite: string;
-  language: string;
-  mediaType: string;
-  previewImage: string;
-  searchLine1: string;
-  searchLine2: string;
-  summary: string;
-  videoName: string;
-  videoDistributionUrl: string;
-  videoHlsDistributionUrl: string;
-  videoMimeType: string;
-  videoThumbnailUrl: string;
-  videoCoverImageUrl: string;
+  vendor_name: string;
+  vendor_ad_id: string;
+  ad_name: string;
+  ad_headline: string;
+  ad_text: string;
+  ad_preview_link: string;
+  country_id: number;
+  ad_topic: string;
+  ad_video_name: string;
+  campaign_name: string;
+  ad_concept: string | null;
+  agency_campaign: string | null;
+  display_url: string | null;
+  landing_page: string | null;
+  search_line1: string | null;
+  search_line2: string | null;
+  video_distribution_url: string | null;
+  video_hls_distribution_url: string | null;
+  video_mime_type: string | null;
+  video_thumbnail_url: string | null;
+  video_cover_image_url: string | null;
+  dynamic_descriptions: string | null;
+  ad_type: string;
+  ad_destination_type: string;
+  agency_id: number;
+  agency_name: string;
+  ad_group: string;
+  adset_name: string;
+  media_type: string;
+  ad_language: string;
+  ad_site_url: string;
+  ad_destination_url: string;
+  call_to_action_type: string;
 }
 
 export interface PersonOffer {
@@ -417,16 +373,6 @@ export enum TitleOption {
   OPTION_3 = "More Than Two Events",
   OPTION_4 = "No Events In Three Days",
   OPTION_5 = TitleOption.OPTION_1,
-}
-
-enum ZoneEnum {
-  BOA_VISTA_COLOMBO = 500387154,
-  PONTA_GROSSA_CAMPOS_GERAIS = 500427238,
-  TARUMÃ_PINHAIS = 500427239,
-  IGUAÇU_CAMPO_COMPRIDO = 500483702,
-  SÃO_LOURENÇO_CURITIBA = 500393700,
-  PONTA_GROSSA_NORTE = 500251576,
-  APS = 500625797,
 }
 
 export interface User {
