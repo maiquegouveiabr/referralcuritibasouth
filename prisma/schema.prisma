@@ -1,12 +1,10 @@
 generator client {
-  provider = "prisma-client-js"   // ← recommended (you had "prisma-client")
+  provider = "prisma-client-js"   // changed from "prisma-client"
   output   = "../lib/generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")     // ← runtime URL (use pooled)
-  directUrl = env("DIRECT_URL")       // ← for migrations + prisma studio/db pull
+  provider = "postgresql"
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
