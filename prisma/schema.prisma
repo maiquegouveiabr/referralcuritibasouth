@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model area {
+  id         BigInt      @id @default(autoincrement())
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  name       String?     @unique
+  is_active  Boolean?    @default(true)
+  zone_id    BigInt
+  zone       zone        @relation(fields: [zone_id], references: [id], onDelete: Cascade)
+  reference  reference[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model offer {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  name       String   @unique
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reference {
+  id        String   @id
+  sent_date DateTime @default(now()) @db.Timestamptz(6)
+  name      String?
+  offer     String?
+  other     String?
+  phone     String?
+  who_sent  String?
+  area_id   BigInt?
+  area      area?    @relation(fields: [area_id], references: [id], onDelete: Cascade)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stop_teaching_reason {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  name       String   @unique
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model uba_area {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  name       String?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user {
+  user_id     BigInt   @id @default(autoincrement())
+  create_date DateTime @default(now()) @db.Timestamptz(6)
+  is_active   Boolean  @default(true)
+  name        String?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model zone {
+  id           BigInt   @id @default(autoincrement())
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  name         String   @unique
+  is_zone_real Boolean  @default(true)
+  area         area[]
+}
